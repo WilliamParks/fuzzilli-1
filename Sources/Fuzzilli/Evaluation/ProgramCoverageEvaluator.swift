@@ -52,7 +52,13 @@ public class CovEdgeSet: ProgramAspects {
 
     // Updates the internal state to match the provided collection
     fileprivate func setEdges<T: Collection>(_ collection: T) where T.Element == UInt32 {
-        precondition(collection.count <= self.count)
+        // Dealing with undeterministic edges may result in needing to allocate more space
+        if collection.count > self.count {
+            free(self.edges)
+            self.edges = UnsafeMutablePointer.allocate(capacity: collection.count)
+            self._count = UInt64(collection.count)
+        }
+
         self._count = UInt64(collection.count)
         for (i, edge) in collection.enumerated() {
             self.edges![i] = edge
