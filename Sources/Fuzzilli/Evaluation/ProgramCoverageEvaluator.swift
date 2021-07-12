@@ -210,6 +210,11 @@ public class ProgramCoverageEvaluator: ComponentBase, ProgramEvaluator {
         }
     }
 
+    private func getResetEdges(_ aspects: ProgramAspects) -> [UInt32] {
+        let edgeSet = aspects as! CovEdgeSet
+        return edgeSet.toEdges().filter( {resetCounts[$0]! > maxResetCount} )
+    }
+
     public func evaluateAndIntersect(_ program: Program, with aspects: ProgramAspects) -> ProgramAspects? {
 
         guard let firstCov = aspects as? CovEdgeSet else { 
@@ -231,7 +236,12 @@ public class ProgramCoverageEvaluator: ComponentBase, ProgramEvaluator {
             resetEdge(edge)
         }
 
-        let intersectionEdges = secondCovSet.intersection(firstCovSet)
+        var intersectionEdges = secondCovSet.intersection(firstCovSet)
+
+        // Include any reset edges from either execution
+        intersectionEdges = intersectionEdges.union(getResetEdges(aspects))
+        intersectionEdges = intersectionEdges.union(getResetEdges(secondCovEdgeSet))
+
         guard intersectionEdges.count != 0 else { return nil }
 
         let sortedIntersetionEdges = Array(intersectionEdges).sorted()
